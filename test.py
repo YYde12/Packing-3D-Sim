@@ -212,9 +212,9 @@ def run_simulator(sim: SimulationContext, entities: dict):
             # transform_list[2] += half_z
             # add offset to transform_list  
             centroid = item.curr_geometry.centroid()
-            transform_list[0] += centroid.x+0.5
-            transform_list[1] += centroid.y+0.5
-            transform_list[2] += centroid.z+0.5
+            transform_list[0] += centroid.x
+            transform_list[1] += centroid.y
+            transform_list[2] += centroid.z
             # print("transform list", transform_list)
             transform_tensor = torch.tensor(transform_list, device=args_cli.device)
             # print(transform_tensor)
