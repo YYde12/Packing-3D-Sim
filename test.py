@@ -203,13 +203,18 @@ def run_simulator(sim: SimulationContext, entities: dict):
             # print("item.curr_geometry.x_size =", item.curr_geometry.x_size, 
             #       "item.curr_geometry.y_size =", item.curr_geometry.y_size,
             #       "item.curr_geometry.z_size =", item.curr_geometry.z_size)
-            half_z = item.curr_geometry.z_size / 2.0   
-            half_x = item.curr_geometry.x_size / 2.0   
-            half_y = item.curr_geometry.y_size / 2.0   
+            # half_z = item.curr_geometry.z_size / 2.0   
+            # half_x = item.curr_geometry.x_size / 2.0   
+            # half_y = item.curr_geometry.y_size / 2.0 
             # add offset to transform_list
-            transform_list[0] += half_x
-            transform_list[1] += half_y
-            transform_list[2] += half_z
+            # transform_list[0] += half_x
+            # transform_list[1] += half_y
+            # transform_list[2] += half_z
+            # add offset to transform_list  
+            centroid = item.curr_geometry.centroid()
+            transform_list[0] += centroid.x+0.5
+            transform_list[1] += centroid.y+0.5
+            transform_list[2] += centroid.z+0.5
             # print("transform list", transform_list)
             transform_tensor = torch.tensor(transform_list, device=args_cli.device)
             # print(transform_tensor)
