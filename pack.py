@@ -82,19 +82,27 @@ class PackingProblem(object):
         # print("search possible positions: ", t2 - t1)
 
         # 如果找不到可以放置的位置
-        assert len(transforms) > 0, "未找到可以放置的位置和角度"
-        
-        # 暂时不考虑放置物体后物体堆的稳定性
-        # 直接按照排名第一的变换矩阵放置物体
-        curr_item.transform(transforms[0])
+        assert len(transforms) > 0, "No position or angle was found for placement"
+        checker = StabilityChecker(self.container)
+        for transform in transforms:
+            print("transform", transform,"Isstable", checker.is_statically_stable(curr_item, transform))
+            if checker.is_statically_stable(curr_item, transform):
+                curr_item.transform(transform)
+                self.container.add_item(curr_item)
+                return transform
 
-        # t3 = time.time()
-        # print("rotate to a position: ", t3 - t2)
-        self.container.add_item(curr_item)
+        raise RuntimeError("All candidate positions are unstable")
+        # # 暂时不考虑放置物体后物体堆的稳定性
+        # # 直接按照排名第一的变换矩阵放置物体
+        # curr_item.transform(transforms[0])
 
-        # t4 = time.time()
-        # print("add item to container: ", t4 - t3, '\n')
-        return transforms[0]
+        # # t3 = time.time()
+        # # print("rotate to a position: ", t3 - t2)
+        # self.container.add_item(curr_item)
+
+        # # t4 = time.time()
+        # # print("add item to container: ", t4 - t3, '\n')
+        # return transforms[0]
 
     
     def autopack_allitems(self):

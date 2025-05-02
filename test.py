@@ -187,9 +187,8 @@ def run_simulator(sim: SimulationContext, entities: dict):
     while simulation_app.is_running():
         # If there are still unplaced object, place the next one
         if current_idx < len(items):
-            raw_transform = problem.autopack_oneitem(current_idx)
-            print("raw transform", raw_transform)
-            transform_list = convert_transform_to_list(raw_transform, device=args_cli.device)
+            transform = problem.autopack_oneitem(current_idx)
+            transform_list = convert_transform_to_list(transform, device=args_cli.device)
             """
             When IsaacSim renders MeshCuboidCfg(size=(xSize,ySize,zSize)), 
             the model origin is usually at the center of the cube. The 
