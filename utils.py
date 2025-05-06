@@ -115,7 +115,7 @@ class TransformScore:
 
 class StabilityChecker:
     """
-    使用平面支持区域法（Center‐of‐Mass 投影法）来判断物体在容器中某一放置方式下的静态稳定性。
+    The center-of-mass projection method is used to determine the static stability of an object when placed in a container.
     """
 
     def __init__(self, container, threshold=0.2):
@@ -124,50 +124,49 @@ class StabilityChecker:
 
     def is_statically_stable(self, item, transform) -> bool:
         """
-        判断 item 在给定 transform 下是否静态稳定。
-
-        :param item: 要检查的 Item 实例
-        :param transform: Transform 对象，包含位移和姿态
-        :return: True 表示静态稳定，False 表示不稳定
+        Determine whether the item is statically stable under the given transform.
+    
+        :param item: The Item instance to check
+        :param transform: A Transform object containing position and orientation
+        :return: True if statically stable, False otherwise
         """
-        # 1) 应用变换
+        # Apply the transform to the item
         item.transform(transform)
 
-        # 2) 如果贴地，直接稳定
+         # If the item is in contact with the ground, consider it stable
         if item.position.z == 0:
             return True
 
-        # 3) 计算底面格点坐标范围
+        # Compute the bounding coordinates of the bottom surface grid points
         x0, y0 = item.position.x, item.position.y
         dx, dy = item.curr_geometry.x_size, item.curr_geometry.y_size
 
-        # 4) 收集所有支撑格子的中心点
+        # Collect the center points of all supporting grid cells
         support_pts = []
         for i in range(dx):
             for j in range(dy):
-                # 边界检查（避免 IndexError）
+                # Boundary check to avoid IndexError
                 if not (0 <= x0 + i < self.container.heightmap.shape[0] and
                         0 <= y0 + j < self.container.heightmap.shape[1]):
                     continue
-                # 容器高度大于等于物体底面高度 - 1 时，表示在此格子有支撑
+                # Support condition: 0 <= item.position.z - self.container.heightmap[x0 + i][y0 + j] <= 1
                 if 0 <= item.position.z - self.container.heightmap[x0 + i][y0 + j] <= 1:
                     support_pts.append((x0 + i + 0.5, y0 + j + 0.5))
 
-        # 如果没有任何支撑点，则不稳定
+         # If there are no supporting points, the item is not stable
         if not support_pts:
             return False
         
-        # 计算重心投影并做点-in-多边形测试
+        # Compute the projection of the center of mass 
         com_x = x0 + dx / 2
         com_y = y0 + dy / 2
 
-        # 如果凸包是点
+        # If the support points form a single point
         if len(support_pts) == 1:
             return Point(com_x, com_y).distance(Point(support_pts[0])) < self.threshold
-
-        # 计算支撑点的凸包
+        # Compute the convex hull of support points
         hull = MultiPoint(support_pts).convex_hull
-        # 如果凸包是线段
+        # If the hull is a line segment, check if the center of mass projection lies on or near the line
         if hull.geom_type == 'LineString':
             return Point(com_x, com_y).distance(hull) < self.threshold
 

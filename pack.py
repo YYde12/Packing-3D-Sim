@@ -81,7 +81,7 @@ class PackingProblem(object):
         # t2 = time.time()
         # print("search possible positions: ", t2 - t1)
 
-        # 如果找不到可以放置的位置
+        # If no valid placement position can be found, the item cannot be placed
         assert len(transforms) > 0, "No position or angle was found for placement"
         checker = StabilityChecker(self.container)
         for transform in transforms:
@@ -91,7 +91,11 @@ class PackingProblem(object):
                 self.container.add_item(curr_item)
                 return transform
 
-        raise RuntimeError("All candidate positions are unstable")
+        # If no stable position is found, fall back to the first candidate
+        print("[WARNING]: All candidate positions are unstable. Using the first candidate as fallback.")
+        curr_item.transform(transforms[0])
+        self.container.add_item(curr_item)
+        return transforms[0]
         # # 暂时不考虑放置物体后物体堆的稳定性
         # # 直接按照排名第一的变换矩阵放置物体
         # curr_item.transform(transforms[0])
