@@ -37,10 +37,13 @@ class Container(object):
         # item.position 只是物体框架的最靠近原点的坐标
         # 还要计算物体质心相对于物体原点的坐标
         # 然后两者相加，得到物体在容器中的实际质心
-        true_centroid = item.position + centroid
-        x = true_centroid.x
-        y = true_centroid.y
-        z = true_centroid.z
+        # true_centroid = item.position + centroid
+        # x = true_centroid.x
+        # y = true_centroid.y
+        # z = true_centroid.z
+        x = item.position.x
+        y = item.position.y
+        z = item.position.z
 
         if method == "DBLF":
             return z + c * (x + y)
@@ -171,12 +174,14 @@ class Container(object):
                     if self.add_item_topdown(item, x, y):
                         # 如果当前位置能放入容器中
                         # 计算当前位置的分数
-                        score = self.hueristic_score(item, centroid, "DBLF")
+                        score = self.hueristic_score(item, centroid, "HM")
+                        # score = self.hueristic_score(item, centroid, "DBLF")
 
                         curr_position = item.position
                         curr_transform = Transform(curr_position, curr_attitude)
                         # 组合起来，为排序做准备
                         tf_score = TransformScore(curr_transform, score)
+                        # print("score", score)
                         stable_transforms_score.put(tf_score)
 
                     # 否则直接跳过
@@ -196,6 +201,7 @@ class Container(object):
             transform_score = stable_transforms_score.get()
 
             stable_transforms.append(transform_score.transform)
+            # print("best score?" ,cnt, transform_score.score)
         
         return stable_transforms
     

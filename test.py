@@ -123,6 +123,20 @@ def design_scene():
                [10, 7, 4],
                [5, 5, 4]
               ]
+    # objects = [[7, 7, 4],
+    #            [5, 5, 4], 
+    #            [7, 4, 4],
+    #            [8, 5, 4],
+    #            [7, 4, 4],
+    #            [8, 10, 9],
+    #            [8, 9, 9],
+    #            [9, 7, 6],
+    #            [7, 6, 4],
+    #            [7, 6, 4],
+    #            [9, 6, 4], 
+    #            [10, 7, 4], 
+    #            [5, 5, 4]
+    #           ]
     items = []
     for i, obj in enumerate(objects):
         # generate dimensions
@@ -186,7 +200,7 @@ def run_simulator(sim: SimulationContext, entities: dict):
 
     while simulation_app.is_running():
         # If there are still unplaced object, place the next one
-        if current_idx < len(items):
+        if current_idx < len(items) and count % 100 == 0:
             transform = problem.autopack_oneitem(current_idx)
             transform_list = convert_transform_to_list(transform, device=args_cli.device)
             """
@@ -199,24 +213,22 @@ def run_simulator(sim: SimulationContext, entities: dict):
             # get current item 
             item = items[current_idx]
             # Calculate the offset
-            # print("item.curr_geometry.x_size =", item.curr_geometry.x_size, 
-            #       "item.curr_geometry.y_size =", item.curr_geometry.y_size,
-            #       "item.curr_geometry.z_size =", item.curr_geometry.z_size)
-            # half_z = item.curr_geometry.z_size / 2.0   
-            # half_x = item.curr_geometry.x_size / 2.0   
-            # half_y = item.curr_geometry.y_size / 2.0 
+            print("item.curr_geometry.x_size =", item.curr_geometry.x_size, 
+                  "item.curr_geometry.y_size =", item.curr_geometry.y_size,
+                  "item.curr_geometry.z_size =", item.curr_geometry.z_size)
+            half_z = item.curr_geometry.z_size / 2.0   
+            half_x = item.curr_geometry.x_size / 2.0   
+            half_y = item.curr_geometry.y_size / 2.0 
             # add offset to transform_list
-            # transform_list[0] += half_x
-            # transform_list[1] += half_y
-            # transform_list[2] += half_z
-            # add offset to transform_list  
-            centroid = item.curr_geometry.centroid()
-            transform_list[0] += centroid.x
-            transform_list[1] += centroid.y
-            transform_list[2] += centroid.z
-            # print("transform list", transform_list)
+            transform_list[0] += half_x
+            transform_list[1] += half_y
+            transform_list[2] += half_z
+            # # add offset to transform_list  
+            # centroid = item.curr_geometry.centroid()
+            # transform_list[0] += centroid.x 
+            # transform_list[1] += centroid.y 
+            # transform_list[2] += centroid.z 
             transform_tensor = torch.tensor(transform_list, device=args_cli.device)
-            # print(transform_tensor)
             item_objects[f"item_{current_idx}"].write_root_pose_to_sim(transform_tensor)  # apply sim data
             print(f"Item {current_idx} placed at transform: {transform_list}")
             current_idx += 1  
@@ -225,26 +237,19 @@ def run_simulator(sim: SimulationContext, entities: dict):
         # update sim-time
         sim_time += sim_dt  
         count += 1
-        # Update states
-        # container.update(sim_dt)
+        # print("count", count)
+
         # update buffers
         for item in item_list:
             item.update(sim_dt)
 
-        # print the root position
-        '''
-        if count % 50 == 0:
-            for i, item in enumerate(item_list):
-                pos = item.data.root_state_w[0, :3]
-                print(f"Object {i} root position: {pos}")
-        '''  
 def main():
     """Main function."""
     # Load kit helper
     sim_cfg = sim_utils.SimulationCfg(device=args_cli.device)
     sim = SimulationContext(sim_cfg)
     # Set main camera 
-    sim.set_camera_view(eye=[40, 40, 40], target=[0, 0, 0])
+    sim.set_camera_view(eye=[50, 50, 40], target=[0, 0, 0])
     # Build the scene with container and objects.
     scene_entities = design_scene()
     sim.reset()

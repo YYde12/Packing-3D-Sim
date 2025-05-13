@@ -158,7 +158,7 @@ class Geometry(object):
         # 此时的 newPointMat 有正有负
         newPointMat = T_rotate * self.pointsMat
 
-        distThsld = 0.84    #0.81, 0.8661
+        distThsld = 0.81    #0.81, 0.8661
 
         for idx in range(newPointMat.shape[1]):
             
