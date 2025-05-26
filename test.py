@@ -85,7 +85,7 @@ def design_scene():
     '''
 
     # Create separate groups called "Origin1", "Origin2", "Origin3",...
-    # Each group will have a robot in it
+    # Each group will have a item in it
     origins = [[25, 25, 0.0], 
                [25, 35, 0.0], 
                [25, 45, 0.0], 
@@ -229,6 +229,7 @@ def run_simulator(sim: SimulationContext, entities: dict):
             # transform_list[1] += centroid.y 
             # transform_list[2] += centroid.z 
             transform_tensor = torch.tensor(transform_list, device=args_cli.device)
+            print(f"transform_tensor", transform_tensor,"transform_tensor dtype:",transform_tensor.dtype)
             item_objects[f"item_{current_idx}"].write_root_pose_to_sim(transform_tensor)  # apply sim data
             print(f"Item {current_idx} placed at transform: {transform_list}")
             current_idx += 1  
@@ -245,6 +246,7 @@ def run_simulator(sim: SimulationContext, entities: dict):
 
 def main():
     """Main function."""
+    
     # Load kit helper
     sim_cfg = sim_utils.SimulationCfg(device=args_cli.device)
     sim = SimulationContext(sim_cfg)

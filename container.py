@@ -15,10 +15,11 @@ class Container(object):
             box_size (tuple): 箱子的大小 (z, x, y)
         """        
         self.boxSize = box_size
+        self.ray_hits_w = []
         # 创建空的几何体
         self.geometry = Geometry(np.zeros(tuple(box_size)))
         # 计算高度表
-        self.heightmap = self.geometry.heightmap_topdown()
+        self.heightmap = np.zeros((self.boxSize[1], self.boxSize[2]))
         # 当前是放进来的第几个物体（为了用不同的颜色区分）
         self.number = 0
 
@@ -29,6 +30,16 @@ class Container(object):
         self.heightmap = self.geometry.heightmap_topdown()
         self.number = 0
 
+
+    #通过ray caster获得容器的heightmap
+    def get_heightmap_topdown(self):
+        for y in range(self.boxSize[2]):
+            for x in range(self.boxSize[1]):
+                index = y * self.boxSize[1] + x
+                if index < len(self.ray_hits_w):
+                    self.heightmap[x][y] = round(self.ray_hits_w[index].item())
+        print(f"heightmap", self.heightmap)
+    
     
     # 由给定的启发函数计算对应的分数
     def hueristic_score(self, item: Item, centroid, method):

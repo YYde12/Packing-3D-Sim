@@ -70,6 +70,11 @@ class PackingProblem(object):
             return True
         
         return False
+    
+    def get_ray_caster_data(self, ray_hits_w: list):
+        self.container.ray_hits_w = ray_hits_w
+        self.container.get_heightmap_topdown()
+        return True
 
     
     def autopack_oneitem(self, item_idx):
