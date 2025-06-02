@@ -80,7 +80,7 @@ def design_scene() -> dict:
     """Design the scene."""
     # -- Rough terrain
     cfg = sim_utils.UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Terrains/rough_plane.usd")
-    cfg.func("/World/ground", cfg)
+    cfg.func("/World/Ground", cfg)
 
     # spawn distant light
     light_cfg = sim_utils.DomeLightCfg(intensity=2000.0, color=(0.8, 0.8, 0.8))
@@ -103,7 +103,7 @@ def design_scene() -> dict:
 
     # -- ball
     cfg = RigidObjectCfg(
-        prim_path="/World/Origin0/ball",
+        prim_path="/World/Origin0/Ball",
         spawn=sim_utils.SphereCfg(
             radius=0.005,
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
@@ -136,7 +136,7 @@ def design_scene() -> dict:
         item = getSurfaceItem(zSize, xSize, ySize)
         items.append(item)
         index = i + 1
-        moving_cuboid_1_cfg = RigidObjectCfg(
+        moving_cuboid_cfg = RigidObjectCfg(
             prim_path=f"/World/Origin{index}/MovingCuboid",
             spawn=sim_utils.MeshCuboidCfg(
                 size=(xSize, ySize, zSize),
@@ -153,14 +153,14 @@ def design_scene() -> dict:
                 ),
             ),
         )
-        moving_cuboid = RigidObject(moving_cuboid_1_cfg)
+        moving_cuboid = RigidObject(moving_cuboid_cfg)
         moving_cuboids[f"moving_cuboid_{i}"] = moving_cuboid
 
     # Create a ray-caster sensor
     ray_caster_cfg = RayCasterCfg(
-        prim_path="/World/Origin0/ball",
+        prim_path="/World/Origin0/Ball",
         offset=RayCasterCfg.OffsetCfg(pos=(box_size[1]/2, box_size[2]/2, box_size[0])),
-        mesh_prim_paths=["/World/ground", "/World/Origin.*/MovingCuboid"],
+        mesh_prim_paths=["/World/Ground", "/World/Origin.*/MovingCuboid"],
         pattern_cfg=patterns.GridPatternCfg(resolution=1, size=(box_size[1]-1, box_size[2]-1)),
         attach_yaw_only=True,
         debug_vis=not args_cli.headless,

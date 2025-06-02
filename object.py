@@ -158,7 +158,16 @@ class Geometry(object):
         # 此时的 newPointMat 有正有负
         newPointMat = T_rotate * self.pointsMat
 
-        distThsld = 0.81    #0.81, 0.8661
+        # distThsld = 0.84    #0.81, 0.8661
+        # 自动调整 distThsld，根据几何体尺寸差异
+        sizes = [self.x_size, self.y_size, self.z_size]
+        size_range = max(sizes) - min(sizes)
+
+        if size_range >= 10:
+            distThsld = 0.84
+        else:
+            distThsld = 0.81
+
 
         for idx in range(newPointMat.shape[1]):
             
