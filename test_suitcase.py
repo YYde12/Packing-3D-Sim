@@ -106,9 +106,13 @@ def get_suitcase_size():
 
 def design_scene() -> dict:
     """Design the scene."""
-    # -- Rough terrain
-    cfg = sim_utils.UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Terrains/rough_plane.usd")
-    cfg.func("/World/ground", cfg)
+    # # -- Rough terrain
+    # cfg = sim_utils.UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Terrains/rough_plane.usd")
+    # cfg.func("/World/Ground", cfg)
+
+    # Ground-plane
+    cfg = sim_utils.UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Terrains/flat_plane.usd")
+    cfg.func("/World/Ground", cfg)
 
     # spawn distant light
     light_cfg = sim_utils.DomeLightCfg(intensity=2000.0, color=(0.8, 0.8, 0.8))
@@ -128,6 +132,7 @@ def design_scene() -> dict:
                [25, 45, 0],
                [25, 55, 0],
                [25, 65, 0],
+               [25, 35, 0]
                ]
     for i, origin in enumerate(origins):
         prim_utils.create_prim(f"/World/Origin{i}", "Xform", translation=origin)
@@ -244,7 +249,7 @@ def design_scene() -> dict:
                         # rigid_body_enabled=True,
                         # kinematic_enabled=True,
                     ),
-                    mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
+                    mass_props=sim_utils.MassPropertiesCfg(mass=5.0),
                     collision_props=sim_utils.CollisionPropertiesCfg(),
                     visual_material=sim_utils.PreviewSurfaceCfg(
                         diffuse_color=(random.random(), random.random(), random.random()), 
@@ -260,7 +265,7 @@ def design_scene() -> dict:
     ray_caster_cfg = RayCasterCfg(
         prim_path="/World/Origin0/ball",
         offset=RayCasterCfg.OffsetCfg(pos=(box_size[1]/2, box_size[2]/2, box_size[0]+10)),
-        mesh_prim_paths=["/World/ground", "/World/Origin.*/Suitcase"],
+        mesh_prim_paths=["/World/Ground", "/World/Origin.*/Suitcase"],
         pattern_cfg=patterns.GridPatternCfg(resolution=1, size=(box_size[1]-1, box_size[2]-1)),
         attach_yaw_only=True,
         debug_vis=not args_cli.headless,
@@ -302,12 +307,12 @@ def run_simulator(sim: sim_utils.SimulationContext, scene_entities: dict):
     ball_default_state = ball.data.default_root_state.clone()
 
     while simulation_app.is_running():  
-        # if count == 100:
-        #     print(f"hightmap",ray_caster.data.ray_hits_w[0, :, 2].cpu().numpy())
         # If there are still unplaced object, place the next one
         if current_idx < len(items) and count % 200 == 0:
-            # print("ray_caster.data.ray_hits_w:", ray_caster.data.ray_hits_w)
-            problem.get_ray_caster_data(ray_caster.data.ray_hits_w[0, :, 2].cpu().numpy())
+            # print(f"hightmap",ray_caster.data.ray_hits_w[0, :, 2].cpu().numpy())
+            raw_data = ray_caster.data.ray_hits_w[0, :, 2].cpu().numpy()
+            raw_data[np.isinf(raw_data) | np.isnan(raw_data)] = 0
+            problem.get_ray_caster_data(raw_data)
             transform = problem.autopack_oneitem(current_idx)
             transform_list = convert_transform_to_list(transform, device=args_cli.device)
             """
