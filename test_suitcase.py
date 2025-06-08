@@ -119,20 +119,25 @@ def design_scene() -> dict:
     light_cfg.func("/World/Light", light_cfg)
 
     #box size(z,x,y)
-    box_size = (20, 30, 30)
+    box_size = (20, 40, 40)
+    wall_thickness = 2
 
     # Create separate groups called "Origin1", "Origin2", "Origin3",...(x，y，z)
     # Each group will have a item in it
-    origins = [[0, 0, 0], 
-               [box_size[1]/2, -3, box_size[0]/2], 
-               [box_size[1]/2, 33, box_size[0]/2], 
-               [-3, box_size[2]/2, box_size[0]/2],
-               [28, box_size[2]/2, box_size[0]/2],
-               [25, 35, 0],
-               [25, 45, 0],
-               [25, 55, 0],
-               [25, 65, 0],
-               [25, 35, 0]
+    origins = [[-5, -5, 0], 
+               [box_size[1]/2, -wall_thickness/2, box_size[0]/2], 
+               [box_size[1]/2, box_size[2]+wall_thickness/2, box_size[0]/2], 
+               [-wall_thickness/2, box_size[2]/2, box_size[0]/2],
+               [box_size[1]+wall_thickness/2, box_size[2]/2, box_size[0]/2],
+               [50, 50, 0],
+               [50, 60, 0],
+               [50, 70, 0],
+               [50, 80, 0],
+               [50, 90, 0],
+               [60, 50, 0],
+               [60, 60, 0],
+               [60, 70, 0],
+               [60, 80, 0],
                ]
     for i, origin in enumerate(origins):
         prim_utils.create_prim(f"/World/Origin{i}", "Xform", translation=origin)
@@ -141,7 +146,7 @@ def design_scene() -> dict:
     cfg = RigidObjectCfg(
         prim_path="/World/Origin0/ball",
         spawn=sim_utils.SphereCfg(
-            radius=0.005,
+            radius=0.05,
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
             mass_props=sim_utils.MassPropertiesCfg(mass=0.5),
             collision_props=sim_utils.CollisionPropertiesCfg(),
@@ -158,7 +163,7 @@ def design_scene() -> dict:
     container_1_cfg = RigidObjectCfg(
         prim_path=f"/World/Origin1/Container_1",
         spawn=sim_utils.MeshCuboidCfg(
-                size=(box_size[1] ,6 , box_size[0]),
+                size=(box_size[1], wall_thickness, box_size[0]),
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
                     disable_gravity=True,
                     rigid_body_enabled=True,
@@ -178,7 +183,7 @@ def design_scene() -> dict:
     container_2_cfg = RigidObjectCfg(
         prim_path=f"/World/Origin2/Container_2",
         spawn=sim_utils.MeshCuboidCfg(
-                size=(box_size[1] ,6 , box_size[0]),
+                size=(box_size[1], wall_thickness, box_size[0]),
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
                     disable_gravity=True,
                     rigid_body_enabled=True,
@@ -198,7 +203,7 @@ def design_scene() -> dict:
     container_3_cfg = RigidObjectCfg(
         prim_path=f"/World/Origin3/Container_3",
         spawn=sim_utils.MeshCuboidCfg(
-                size=(6, box_size[2], box_size[0]),
+                size=(wall_thickness, box_size[2], box_size[0]),
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
                     disable_gravity=True,
                     rigid_body_enabled=True,
@@ -218,7 +223,7 @@ def design_scene() -> dict:
     container_4_cfg = RigidObjectCfg(
         prim_path=f"/World/Origin4/Container_4",
         spawn=sim_utils.MeshCuboidCfg(
-                size=(6 ,box_size[2] , box_size[0]),
+                size=(wall_thickness, box_size[2] , box_size[0]),
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
                     disable_gravity=True,
                     rigid_body_enabled=True,
@@ -264,7 +269,7 @@ def design_scene() -> dict:
     # Create a ray-caster sensor
     ray_caster_cfg = RayCasterCfg(
         prim_path="/World/Origin0/ball",
-        offset=RayCasterCfg.OffsetCfg(pos=(box_size[1]/2, box_size[2]/2, box_size[0]+10)),
+        offset=RayCasterCfg.OffsetCfg(pos=(box_size[1]/2, box_size[2]/2, box_size[0]+5)),
         mesh_prim_paths=["/World/Ground", "/World/Origin.*/Suitcase"],
         pattern_cfg=patterns.GridPatternCfg(resolution=1, size=(box_size[1]-1, box_size[2]-1)),
         attach_yaw_only=True,
@@ -364,7 +369,7 @@ def main():
     sim_cfg = sim_utils.SimulationCfg(device=args_cli.device)
     sim = sim_utils.SimulationContext(sim_cfg)
     # Set main camera
-    sim.set_camera_view([40, 40, 50], [0.0, 0.0, 0.0])
+    sim.set_camera_view([70, 70, 70], [0.0, 0.0, 0.0])
     # Design the scene
     scene_entities = design_scene()
     # Play simulator
