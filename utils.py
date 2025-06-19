@@ -150,7 +150,7 @@ class StabilityChecker:
                         0 <= y0 + j < self.container.heightmap.shape[1]):
                     continue
                 # Support condition: 0 <= item.position.z - self.container.heightmap[x0 + i][y0 + j] <= 1
-                if 0 <= item.position.z - self.container.heightmap[x0 + i][y0 + j] <= 1:
+                if 0 <= item.position.z - self.container.heightmap[x0 + i][y0 + j] <= 2:  #1
                     support_pts.append((x0 + i + 0.5, y0 + j + 0.5))
 
          # If there are no supporting points, the item is not stable

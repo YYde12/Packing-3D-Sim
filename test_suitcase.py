@@ -18,7 +18,10 @@ import math
 import torch
 import random
 import numpy as np
+import time
 from pack import *
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 import isaacsim.core.utils.prims as prim_utils
 from pxr import Usd, UsdGeom, Gf
@@ -32,6 +35,47 @@ from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.sensors.ray_caster import RayCaster, RayCasterCfg, patterns
 
 
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+# def plot_raw_data_3d(raw_data_flat, box_size):
+#     """show ray_caster raw_data from ray_caster"""
+#     height, width = box_size[1], box_size[2] 
+#     raw_data = raw_data_flat.reshape((height, width))
+
+#     padded_data = np.pad(raw_data, pad_width=1, mode='constant', constant_values=0)
+
+#     x = np.arange(0, padded_data.shape[1])
+#     y = np.arange(0, padded_data.shape[0])
+#     x, y = np.meshgrid(x, y)
+#     z = padded_data
+
+#     fig = plt.figure(figsize=(10, 8))
+#     ax = fig.add_subplot(111, projection='3d')
+#     surf = ax.plot_surface(x, y, z, cmap='viridis', edgecolor='none')
+#     fig.colorbar(surf, ax=ax, shrink=0.5, aspect=10)
+#     ax.view_init(elev=45, azim=-135)
+#     ax.set_title("3D Heightmap of raw_data (Expanded View)")
+#     ax.set_xlabel("X axis")
+#     ax.set_ylabel("Y axis")
+#     ax.set_zlabel("Height")
+#     plt.show()
+def plot_raw_data_2d(raw_data_flat, box_size):
+    """
+    Show ray_caster raw_data as a 2D heatmap without padding.
+    Color represents height.
+    """
+    height, width = box_size[1], box_size[2]
+    raw_data = raw_data_flat.reshape((height, width))
+
+    plt.figure(figsize=(8, 6))
+    plt.imshow(raw_data, cmap='viridis', origin='lower')
+    plt.colorbar(label='Height')
+    plt.title("2D Heatmap of raw_data (Color = Height)")
+    plt.xlabel("X axis")
+    plt.ylabel("Y axis")
+    plt.show()
 
 def convert_transform_to_list(transform, device):
     # Extract location information
@@ -59,12 +103,13 @@ def getSurfaceItem(zSize, xSize, ySize):
     Parameter order: (zSize, xSize, ySize), consistent with the size order of the entire system (z, x, y).
     """
     cube = np.ones((zSize, xSize, ySize))
-    cube[1: zSize-1, 1: xSize-1, 1: ySize-1] = 0
+    if zSize > 2 and xSize > 2 and ySize > 2:
+        cube[1: zSize-1, 1: xSize-1, 1: ySize-1] = 0
     return Item(cube)
 
-def get_suitcase_size():
+def get_suitcase_size(usd_path):
     # 替换为你的 USD 文件路径
-    stage = Usd.Stage.Open("/home/yu/IsaacLab/source/isaaclab_assets/manibot/suitcase.usd")
+    stage = Usd.Stage.Open(usd_path)
 
     # 替换为你想要查询的 prim 路径
     prim = stage.GetDefaultPrim()
@@ -134,6 +179,10 @@ def design_scene() -> dict:
                [50, 70, 0],
                [50, 80, 0],
                [50, 90, 0],
+               [60, 50, 0],
+               [60, 60, 0],
+               [60, 70, 0],
+               [60, 80, 0],
                [60, 50, 0],
                [60, 60, 0],
                [60, 70, 0],
@@ -244,27 +293,52 @@ def design_scene() -> dict:
     suitcases = {}
     for i, origin in enumerate(origins):
         index = i+5
-        if index < len(origins):
-            suitcase_cfg = RigidObjectCfg(
-                prim_path=f"/World/Origin{index}/Suitcase",
-                spawn=sim_utils.UsdFileCfg(
-                    usd_path=("/home/yu/IsaacLab/source/isaaclab_assets/manibot/suitcase.usd"),
-                    rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                        # disable_gravity=True,
-                        # rigid_body_enabled=True,
-                        # kinematic_enabled=True,
+        if index % 2 == 0:
+            usd = "/home/yu/IsaacLab/source/isaaclab_assets/manibot/suitcase_normal.usd"
+            if index < len(origins):
+                suitcase_cfg = RigidObjectCfg(
+                    prim_path=f"/World/Origin{index}/Suitcase",
+                    spawn=sim_utils.UsdFileCfg(
+                        usd_path=(usd),
+                        rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                            # disable_gravity=True,
+                            # rigid_body_enabled=True,
+                            # kinematic_enabled=True,
+                        ),
+                        mass_props=sim_utils.MassPropertiesCfg(mass=0.5),
+                        collision_props=sim_utils.CollisionPropertiesCfg(),
+                        visual_material=sim_utils.PreviewSurfaceCfg(
+                            diffuse_color=(random.random(), random.random(), random.random()), 
+                            metallic=0.2
+                        ),
                     ),
-                    mass_props=sim_utils.MassPropertiesCfg(mass=5.0),
-                    collision_props=sim_utils.CollisionPropertiesCfg(),
-                    visual_material=sim_utils.PreviewSurfaceCfg(
-                        diffuse_color=(random.random(), random.random(), random.random()), 
-                        metallic=0.2
+                    init_state=RigidObjectCfg.InitialStateCfg(pos=(10, 10, 0.0)),
+                )
+                suitcase = RigidObject(cfg=suitcase_cfg)
+                suitcases[f"suitcase_{i}"] = suitcase
+        else:
+            usd = "/home/yu/IsaacLab/source/isaaclab_assets/manibot/suitcase_large.usd"
+            if index < len(origins):
+                suitcase_cfg = RigidObjectCfg(
+                    prim_path=f"/World/Origin{index}/Suitcase",
+                    spawn=sim_utils.UsdFileCfg(
+                        usd_path=(usd),
+                        rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                            # disable_gravity=True,
+                            # rigid_body_enabled=True,
+                            # kinematic_enabled=True,
+                        ),
+                        mass_props=sim_utils.MassPropertiesCfg(mass=5.0),
+                        collision_props=sim_utils.CollisionPropertiesCfg(),
+                        visual_material=sim_utils.PreviewSurfaceCfg(
+                            diffuse_color=(random.random(), random.random(), random.random()), 
+                            metallic=0.2
+                        ),
                     ),
-                ),
-                init_state=RigidObjectCfg.InitialStateCfg(pos=(10, 10, 0.0)),
-            )
-            suitcase = RigidObject(cfg=suitcase_cfg)
-            suitcases[f"suitcase_{i}"] = suitcase
+                    init_state=RigidObjectCfg.InitialStateCfg(pos=(10, 10, 0.0)),
+                )
+                suitcase = RigidObject(cfg=suitcase_cfg)
+                suitcases[f"suitcase_{i}"] = suitcase
 
     # Create a ray-caster sensor
     ray_caster_cfg = RayCasterCfg(
@@ -301,10 +375,15 @@ def run_simulator(sim: sim_utils.SimulationContext, scene_entities: dict):
     # --- Packing Algorithm ---
     # Initialize packing problem with box size and items
     items = []
-    suitcase_size = get_suitcase_size()
+    suitcase_size_small = get_suitcase_size("/home/yu/IsaacLab/source/isaaclab_assets/manibot/suitcase_normal.usd")
+    suitcase_size_normal = get_suitcase_size("/home/yu/IsaacLab/source/isaaclab_assets/manibot/suitcase_large.usd")
     for i in range(len(suitcases)):
-        item = getSurfaceItem(suitcase_size[2], suitcase_size[0], suitcase_size[1])
-        items.append(item)
+        if i % 2 == 0:
+            item = getSurfaceItem(suitcase_size_normal[2], suitcase_size_normal[0], suitcase_size_normal[1])
+            items.append(item)
+        else:
+            item = getSurfaceItem(suitcase_size_small[2], suitcase_size_small[0], suitcase_size_small[1])
+            items.append(item)
     problem = PackingProblem(box_size, items)
     current_idx = 0  # The index of the object to be placed
 
@@ -313,12 +392,19 @@ def run_simulator(sim: sim_utils.SimulationContext, scene_entities: dict):
 
     while simulation_app.is_running():  
         # If there are still unplaced object, place the next one
-        if current_idx < len(items) and count % 200 == 0:
+        if current_idx < len(items) and count % 100 == 0:
             # print(f"hightmap",ray_caster.data.ray_hits_w[0, :, 2].cpu().numpy())
+            start_time = time.time()
             raw_data = ray_caster.data.ray_hits_w[0, :, 2].cpu().numpy()
             raw_data[np.isinf(raw_data) | np.isnan(raw_data)] = 0
             problem.get_ray_caster_data(raw_data)
+            print(f"[INFO]: ray caster time: {time.time() - start_time:.2f} seconds")
+
+
+            packing_time_start = time.time()
             transform = problem.autopack_oneitem(current_idx)
+            print(f"[INFO]: Packing time: {time.time() - packing_time_start:.2f} seconds")
+
             transform_list = convert_transform_to_list(transform, device=args_cli.device)
             """
             When IsaacSim renders MeshCuboidCfg(size=(xSize,ySize,zSize)), 
@@ -343,7 +429,13 @@ def run_simulator(sim: sim_utils.SimulationContext, scene_entities: dict):
             transform_tensor = torch.tensor(transform_list, device=args_cli.device)
             suitcases[f"suitcase_{current_idx}"].write_root_pose_to_sim(transform_tensor)  # apply sim data
             print(f"Item {current_idx} placed at transform: {transform_list}")
+            print(f"[INFO]: Algorithm total run time: {time.time() - start_time:.2f} seconds")
             current_idx += 1 
+        
+        if  count ==1800:
+            raw_data = ray_caster.data.ray_hits_w[0, :, 2].cpu().numpy()
+            raw_data[np.isinf(raw_data) | np.isnan(raw_data)] = 0
+            plot_raw_data_2d(raw_data, box_size)
 
         # update buffers
         ball.write_root_pose_to_sim(ball_default_state[:, :7])
@@ -369,7 +461,7 @@ def main():
     sim_cfg = sim_utils.SimulationCfg(device=args_cli.device)
     sim = sim_utils.SimulationContext(sim_cfg)
     # Set main camera
-    sim.set_camera_view([70, 70, 70], [0.0, 0.0, 0.0])
+    sim.set_camera_view([70, 70, 80], [0.0, 0.0, 0.0])
     # Design the scene
     scene_entities = design_scene()
     # Play simulator

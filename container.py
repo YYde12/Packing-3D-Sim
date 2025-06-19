@@ -37,29 +37,29 @@ class Container(object):
             for x in range(self.boxSize[1]):
                 index = y * self.boxSize[1] + x
                 if index < len(self.ray_hits_w):
-                    self.heightmap[x][y] = round(self.ray_hits_w[index].item())
+                    self.heightmap[x][y] = round(self.ray_hits_w[index].item(), 1)
         print(f"heightmap", self.heightmap)
     
     
     # 由给定的启发函数计算对应的分数
     def hueristic_score(self, item: Item, centroid, method):
         # 启发函数计算时使用到的小常数
-        c = 0.5
+        c = 0.1   #0.5  
         # item.position 只是物体框架的最靠近原点的坐标
         # 还要计算物体质心相对于物体原点的坐标
         # 然后两者相加，得到物体在容器中的实际质心
-        # true_centroid = item.position + centroid
-        # x = true_centroid.x
-        # y = true_centroid.y
-        # z = true_centroid.z
-        x = item.position.x
-        y = item.position.y
-        z = item.position.z
 
         if method == "DBLF":
+            true_centroid = item.position + centroid
+            x = true_centroid.x
+            y = true_centroid.y
+            z = true_centroid.z
             return z + c * (x + y)
 
         elif method == "HM":
+            x = item.position.x
+            y = item.position.y
+            z = item.position.z
             # 拷贝一份旧的高度图
             new_heightmap = deepcopy(self.heightmap)
             # 计算添加该物体后的容器的高度图
@@ -126,7 +126,7 @@ class Container(object):
         return True
 
 
-    def search_possible_position(self, item: Item, grid_num=10, step_width=45):
+    def search_possible_position(self, item: Item, grid_num=5, step_width=90):
         
         # 存放所有可能的变换矩阵，
         # stable_transforms_score = PriorityQueue(TransformScore(score=10000))
@@ -141,15 +141,17 @@ class Container(object):
                 y = math.floor(self.geometry.y_size * j / grid_num)
                 grid_coords.append([x, y])
 
-        t1 = time.time()
+        # t1 = time.time()
 
         # step_width 为遍历 roll, pitch, yaw 的步长
         # 预处理：提前找到一些比较稳定的 roll, pitch
         # yaw 不影响物体放在平面上的稳定性
+        pitch_yaw_time_start = time.time()
         stable_attitudes = item.planar_stable_attitude(step_width)
+        print(f"[INFO]: Pitch yaw time: {time.time() - pitch_yaw_time_start:.2f} seconds")
 
-        t2 = time.time()
-        print("find state attitudes: ", t2 - t1)
+        # t2 = time.time()
+        # print("find state attitudes: ", t2 - t1)
 
         # for att in stable_attitudes:
         #     print(att)
@@ -165,9 +167,11 @@ class Container(object):
                 # 生成完整的姿态（包括 yaw）
                 curr_attitude = Attitude(part_attitude.roll, part_attitude.pitch, yaw)
                 # 生成旋转后的物体
+                rotate_time_start = time.time()
                 item.rotate(curr_attitude)
                 # 获取该物体自顶向下和自底向上的高度图
                 item.calc_heightmap()
+                print(f"[INFO]: Rotate time: {time.time() - rotate_time_start:.2f} seconds")
                 # 计算当前物体的质心
                 centroid = item.curr_geometry.centroid()
 
@@ -185,8 +189,8 @@ class Container(object):
                     if self.add_item_topdown(item, x, y):
                         # 如果当前位置能放入容器中
                         # 计算当前位置的分数
-                        score = self.hueristic_score(item, centroid, "HM")
-                        # score = self.hueristic_score(item, centroid, "DBLF")
+                        # score = self.hueristic_score(item, centroid, "HM")
+                        score = self.hueristic_score(item, centroid, "DBLF")
 
                         curr_position = item.position
                         curr_transform = Transform(curr_position, curr_attitude)
