@@ -31,11 +31,11 @@ class DummyTransform(Transform):
 # Parametrized test cases
 @pytest.mark.parametrize("heightmap,item_pos,item_size,expect", [
     ([[0,0],[0,0]], (0,0,0), (2,2,1), True),
-    ([[1,0],[0,0]], (0,0,1), (1,1,1), True),
-    ([[1,0],[0,0]], (0,1,1), (1,1,1), False),
-    ([[1,1,0],[0,0,0]], (0,0,1), (2,1,1), True),
-    ([[0,0],[0,0]], (0,0,1), (1,1,1), True),
-    ([[1,1,1],[1,1,1],[0,0,0],[0,0,0],[0,0,0]], (1,0,1), (1,4,1), False)
+    ([[2,0],[0,0]], (0,0,2), (1,1,1), True),
+    ([[2,0],[0,0]], (0,2,2), (1,1,1), False),
+    ([[2,2,0],[0,0,0]], (0,0,2), (1,2,1), True),
+    ([[0,0],[0,0]], (0,0,2), (1,1,1), False),
+    ([[2,0,2],[2,0,2],[2,0,2],[2,0,2],[2,0,2]], (0,0,2), (4,3,1), True)
 ])
 def test_static_stability(heightmap, item_pos, item_size, expect):
     cont = DummyContainer(heightmap)
