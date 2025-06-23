@@ -108,6 +108,65 @@ def get_suitcase_size(usd_path):
 
     return suitcase_size
 
+def crop_valid_region(ray_hits_w: torch.Tensor) -> torch.Tensor:
+    """
+    过滤掉 ray_hits_w 中 z == 0 或任意维度为 inf 的无效点。
+
+    输入:
+        ray_hits_w: Tensor, shape (N, B, 3)
+
+    输出:
+        filtered: Tensor, shape (N, M, 3)，只包含有效点
+    """
+    assert ray_hits_w.dim() == 3 and ray_hits_w.shape[2] == 3, "输入必须是 (N, B, 3)"
+
+    # 去除 inf 点：对每个 ray，如果任意维度是 inf，就无效
+    inf_mask = torch.isinf(ray_hits_w).any(dim=2)  # shape: (N, B)
+
+    # 去除 z == 0 的点
+    z_zero_mask = ray_hits_w[:, :, 2] == 0  # shape: (N, B)
+
+    # 合并无效条件
+    invalid_mask = inf_mask | z_zero_mask
+
+    # 有效点的 mask
+    valid_mask = ~invalid_mask  # shape: (N, B)
+
+    # 对每个传感器单独处理（适用于 N > 1）
+    filtered = []
+    for i in range(ray_hits_w.shape[0]):
+        valid_points = ray_hits_w[i][valid_mask[i]]
+        filtered.append(valid_points.unsqueeze(0))  # shape: [1, M_i, 3]
+
+    # 拼接为一个 batch
+    return torch.cat(filtered, dim=0)  # shape: [N, M, 3]
+
+def get_bounding_box_size(heightmap_topdown: torch.Tensor, heightmap_bottomup: torch.Tensor):
+    """
+    从 topdown 和 bottomup 点云中计算 x, y, z 三个方向的范围尺寸。
+
+    参数:
+        heightmap_topdown: Tensor (1, N1, 3)
+        heightmap_bottomup: Tensor (1, N2, 3)
+
+    返回:
+        x_size, y_size, z_size: 每个方向的 float 尺寸
+    """
+    # 取出有效点
+    top = crop_valid_region(heightmap_topdown)[0]      # shape: [N1', 3]
+    bottom = crop_valid_region(heightmap_bottomup)[0]  # shape: [N2', 3]
+
+    # 分别计算范围
+    x_min, x_max = bottom[:, 0].min(), bottom[:, 0].max()
+    y_min, y_max = bottom[:, 1].min(), bottom[:, 1].max()
+    z_min = bottom[:, 2].min()
+    z_max = top[:, 2].max()
+
+    x_size = round((x_max - x_min).item(),1)
+    y_size = round((y_max - y_min).item(),1)
+    z_size = round((z_max - z_min).item(),1)
+
+    return x_size, y_size, z_size
 
 def design_scene() -> dict:
     """Design the scene."""
@@ -323,7 +382,7 @@ def design_scene() -> dict:
         prim_path="/World/Origin1/ball",
         offset=RayCasterCfg.OffsetCfg(pos=(15, -15, 30)),
         mesh_prim_paths=["/World/Ground", "/World/Origin.*/Data_suitcase"],
-        pattern_cfg=patterns.GridPatternCfg(resolution=1, size=(3, 3), direction = (0, 0, -1)),
+        pattern_cfg=patterns.GridPatternCfg(resolution=1, size=(30, 30), direction = (0, 0, -1)),
         attach_yaw_only=True,
         debug_vis=not args_cli.headless,
     )
@@ -334,7 +393,7 @@ def design_scene() -> dict:
         prim_path="/World/Origin1/ball",
         offset=RayCasterCfg.OffsetCfg(pos=(15, -15, 0)),
         mesh_prim_paths=["/World/Origin.*/Data_suitcase"],
-        pattern_cfg=patterns.GridPatternCfg(resolution=1, size=(3, 3), direction = (0, 0, 1)),
+        pattern_cfg=patterns.GridPatternCfg(resolution=1, size=(30, 30), direction = (0, 0, 1)),
         attach_yaw_only=True,
         debug_vis=not args_cli.headless,
     )
@@ -373,10 +432,19 @@ def run_simulator(sim: sim_utils.SimulationContext, scene_entities: dict):
     for i in range(len(suitcases)):
         item = getSurfaceItem(suitcase_size_large[2], suitcase_size_large[0], suitcase_size_large[1])
         items.append(item)
-    problem = PackingProblem(box_size, items)
     current_idx = 0  # The index of the object to be placed
-    #set stable_attitudes_score
+
+    # 存放所有可能的变换矩阵
     stable_attitudes_score = PriorityQueue()
+    # 将容器划分为 grid_num * grid_num 个网格
+    # 对于每个网格，尝试放下物体
+    grid_coords = []
+    grid_num=5
+    for i in range(grid_num):
+        for j in range(grid_num):
+            x = math.floor(box_size[1] * i / grid_num)
+            y = math.floor(box_size[2] * j / grid_num)
+            grid_coords.append([x, y])
 
     # Get the default state of the ball 
     ball_default_state_1 = balls["ball_1"].data.default_root_state.clone()
@@ -389,30 +457,33 @@ def run_simulator(sim: sim_utils.SimulationContext, scene_entities: dict):
     while simulation_app.is_running():  
         # If there are still unplaced object, place the next one
         if count == 100 :
+            sim_start_time = time.time()
             for roll in range(0, 360, 90):
                 for pitch in range(0, 360, 90):
                     for yaw in range(0, 360, 90):
                         # 构造新状态：位置 + 四元数
-                        roll = math.radians(roll)
-                        pitch = math.radians(pitch)
+                        # roll = math.radians(roll)
+                        # pitch = math.radians(pitch)
                         yaw = math.radians(yaw)
-                        roll_tensor = torch.tensor(roll, dtype=torch.float32)
-                        pitch_tensor = torch.tensor(pitch, dtype=torch.float32)
+                        roll_tensor = torch.tensor(0, dtype=torch.float32)
+                        pitch_tensor = torch.tensor(0, dtype=torch.float32)
                         yaw_tensor = torch.tensor(yaw, dtype=torch.float32)
                         quat_tensor = math_utils.quat_from_euler_xyz(roll_tensor, pitch_tensor, yaw_tensor).flatten()
                         #更新位置
                         data_suitcase_new_state_1 = data_suitcase_default_state_1.clone()
                         data_suitcase_new_state_1[:,3:7] = quat_tensor
-                        print(f"data_suitcase_new_state_1", data_suitcase_new_state_1)
                         data_suitcases["data_suitcase_1"].write_root_pose_to_sim(data_suitcase_new_state_1[:, :7])
                         data_suitcases["data_suitcase_1"].update(dt)
                         ray_casters["ray_caster_2"].update(dt)
                         ray_casters["ray_caster_3"].update(dt)
                         current_idx += 1 
+                        step_start_time = time.time()
                         sim.step()
                         count += 1
+                        print(f"[INFO]: step time: {time.time() - step_start_time:.2f} seconds")
 
                         # update buffers
+                        update_start_time = time.time()
                         for ray_caster in ray_casters_list:
                             ray_caster.update(dt, force_recompute=True) 
                         for suitcase in suitcases_list:
@@ -423,11 +494,17 @@ def run_simulator(sim: sim_utils.SimulationContext, scene_entities: dict):
                             container.update(dt)
                         for ball in balls_list:
                             ball.update(dt)
+                        print(f"[INFO]: update time: {time.time() - update_start_time:.2f} seconds")
 
-                        heightmap_topdown = ray_casters["ray_caster_2"].data.ray_hits_w[0, :, 2]
-                        heightmap_bottomup = ray_casters["ray_caster_3"].data.ray_hits_w[0, :, 2]
-                        item_heightmap = heightmap_topdown - heightmap_bottomup
-                        print(f"at current_idx:", current_idx, "\n", "heightmap_topdown:", heightmap_topdown, "\n", "heightmap_bottomup:", heightmap_bottomup,"\n", "item_heightmap:", item_heightmap, "\n")
+                        heightmap_topdown = ray_casters["ray_caster_2"].data.ray_hits_w
+                        top = crop_valid_region(heightmap_topdown)
+                        heightmap_bottomup = ray_casters["ray_caster_3"].data.ray_hits_w
+                        bottom = crop_valid_region(heightmap_bottomup)
+                        # print(f"at current_idx:", current_idx, "\n", "heightmap_topdown:", top, "\n", "heightmap_bottomup:", bottom,"\n")
+                        x_size, y_size, z_size = get_bounding_box_size(top, bottom)
+                        print(f"x_size = {x_size}, y_size = {y_size}, z_size = {z_size}")
+                        print(f"suitcase_size_large:", suitcase_size_large)
+                        print(f"[INFO]: rotate time: {time.time() - sim_start_time:.2f} seconds")
 
 
         # update buffers
