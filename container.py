@@ -38,7 +38,7 @@ class Container(object):
                 index = y * self.boxSize[1] + x
                 if index < len(self.ray_hits_w):
                     self.heightmap[x][y] = round(self.ray_hits_w[index].item(), 1)
-        print(f"heightmap", self.heightmap)
+        # print(f"heightmap", self.heightmap)
     
     
     # 由给定的启发函数计算对应的分数
@@ -126,7 +126,7 @@ class Container(object):
         return True
 
 
-    def search_possible_position(self, item: Item, grid_num=5, step_width=90):
+    def search_possible_position(self, item: Item, grid_num=10, step_width=45):
         
         # 存放所有可能的变换矩阵，
         # stable_transforms_score = PriorityQueue(TransformScore(score=10000))
@@ -147,7 +147,7 @@ class Container(object):
         # 预处理：提前找到一些比较稳定的 roll, pitch
         # yaw 不影响物体放在平面上的稳定性
         pitch_yaw_time_start = time.time()
-        stable_attitudes = item.planar_stable_attitude(step_width)
+        stable_attitudes = item.planar_stable_attitude()
         print(f"[INFO]: Pitch yaw time: {time.time() - pitch_yaw_time_start:.2f} seconds")
 
         # t2 = time.time()

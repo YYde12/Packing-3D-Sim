@@ -308,42 +308,51 @@ class Item(object):
         self.rotate(transform.attitude)
         self.position = transform.position
 
-    # 获取具有平面稳定性的物体姿态
-    def planar_stable_attitude(self, step_width):
+    # # 获取具有平面稳定性的物体姿态
+    # def planar_stable_attitude(self, step_width):
 
-        # 取稳定性最高的前 6 个姿态
-        stable_attitudes_score = PriorityQueue()
+    #     # 取稳定性最高的前 6 个姿态
+    #     stable_attitudes_score = PriorityQueue()
 
-        # 遍历所有的翻滚角 roll 和俯仰角 pitch
-        for roll in range(0, 360, step_width):
-            for pitch in range(0, 360, step_width):
-                # 当前的姿态参数
-                curr_attitude = Attitude(roll, pitch, 0)
-                self.curr_geometry = Geometry(self.init_geometry.cube)
-                self.curr_geometry.rotate(curr_attitude)
-                # 计算当前姿态对应的稳定性
-                stabilty = self.curr_geometry.stability()
+    #     # 遍历所有的翻滚角 roll 和俯仰角 pitch
+    #     for roll in range(0, 360, step_width):
+    #         for pitch in range(0, 360, step_width):
+    #             # 当前的姿态参数
+    #             curr_attitude = Attitude(roll, pitch, 0)
+    #             self.curr_geometry = Geometry(self.init_geometry.cube)
+    #             self.curr_geometry.rotate(curr_attitude)
+    #             # 计算当前姿态对应的稳定性
+    #             stabilty = self.curr_geometry.stability()
 
-                # ------DEBUG BEGIN------
-                # print("roll: ", roll, "    pitch: ", pitch)
-                # print("stability: ", stabilty)
-                # display = Display([15, 15, 15])
-                # display.show(self.curr_geometry)
-                # input()
-                # -------DEBUG END-------
+    #             # ------DEBUG BEGIN------
+    #             # print("roll: ", roll, "    pitch: ", pitch)
+    #             # print("stability: ", stabilty)
+    #             # display = Display([15, 15, 15])
+    #             # display.show(self.curr_geometry)
+    #             # input()
+    #             # -------DEBUG END-------
 
-                # 加入优先队列中排序
-                stable_attitudes_score.put(AttitudeStability(curr_attitude, stabilty))
+    #             # 加入优先队列中排序
+    #             stable_attitudes_score.put(AttitudeStability(curr_attitude, stabilty))
 
-        # 去掉稳定性数值，只保留姿态 
-        # 取稳定性最高的前 6 个姿态
-        stable_attitudes = []
-        cnt = 0
-        while not stable_attitudes_score.empty() and cnt < 1: #6
-            cnt += 1
-            attitude_score = stable_attitudes_score.get()
-            # print(attitude_score)
-            stable_attitudes.append(attitude_score.attitude)
+    #     # 去掉稳定性数值，只保留姿态 
+    #     # 取稳定性最高的前 6 个姿态
+    #     stable_attitudes = []
+    #     cnt = 0
+    #     while not stable_attitudes_score.empty() and cnt < 6: #6
+    #         cnt += 1
+    #         attitude_score = stable_attitudes_score.get()
+    #         # print(attitude_score)
+    #         stable_attitudes.append(attitude_score.attitude)
         
+    #     return stable_attitudes
+
+    def planar_stable_attitude(self):
+        stable_attitudes = [
+            Attitude(roll=0, pitch=0, yaw=0),          # 底面是原始 z 面
+            Attitude(roll=90, pitch=0, yaw=0),         # 底面是原始 x 面
+            Attitude(roll=0, pitch=90, yaw=0),         # 底面是原始 y 面
+        ]
         return stable_attitudes
+
     
