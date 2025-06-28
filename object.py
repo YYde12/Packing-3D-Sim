@@ -125,139 +125,138 @@ class Geometry(object):
         return T_rotate
 
 
-    def rotate(self,attitude: Attitude):
-        # 原始的 8 个点（立方体的对角顶点）
-        corners = np.array([
-            [0, 0, 0],
-            [self.x_size, 0, 0],
-            [0, self.y_size, 0],
-            [0, 0, self.z_size],
-            [self.x_size, self.y_size, 0],
-            [self.x_size, 0, self.z_size],
-            [0, self.y_size, self.z_size],
-            [self.x_size, self.y_size, self.z_size]
-        ]).T  # 变成 shape=(3, 8)
-        # 给定旋转的执行顺序，依次是 roll, pitch, yaw
-        T_rotate = self.get_rotate_matrix(attitude)
-        # 旋转后的点坐标
-        rotated_corners = T_rotate @ corners  # shape=(3, 8)
+    def rotate(self,attitude: Attitude, step_width):
+        if step_width == 90:
+            # 原始的 8 个点（立方体的对角顶点）
+            corners = np.array([
+                [0, 0, 0],
+                [self.x_size, 0, 0],
+                [0, self.y_size, 0],
+                [0, 0, self.z_size],
+                [self.x_size, self.y_size, 0],
+                [self.x_size, 0, self.z_size],
+                [0, self.y_size, self.z_size],
+                [self.x_size, self.y_size, self.z_size]
+            ]).T  # 变成 shape=(3, 8)
+            # 给定旋转的执行顺序，依次是 roll, pitch, yaw
+            T_rotate = self.get_rotate_matrix(attitude)
+            # 旋转后的点坐标
+            rotated_corners = T_rotate @ corners  # shape=(3, 8)
 
-        # 计算每个维度的 min/max
-        min_xyz = rotated_corners.min(axis=1)
-        max_xyz = rotated_corners.max(axis=1)
+            # 计算每个维度的 min/max
+            min_xyz = rotated_corners.min(axis=1)
+            max_xyz = rotated_corners.max(axis=1)
 
-        # 尺寸 = max - min
-        new_x, new_y, new_z = max_xyz - min_xyz
-        self.x_size = int(np.ceil(new_x))
-        self.y_size = int(np.ceil(new_y))
-        self.z_size = int(np.ceil(new_z))
-        # 新建空的 cube
-        self.cube = np.ones((self.z_size, self.x_size, self.y_size))
-        if self.z_size > 2 and self.x_size > 2 and self.y_size > 2:
-            self.cube[1: self.z_size-1, 1: self.x_size-1, 1: self.y_size-1] = 0
+            # 尺寸 = max - min
+            new_x, new_y, new_z = max_xyz - min_xyz
+            self.x_size = int(np.ceil(new_x))
+            self.y_size = int(np.ceil(new_y))
+            self.z_size = int(np.ceil(new_z))
+            # 新建空的 cube
+            self.cube = np.ones((self.z_size, self.x_size, self.y_size))
+            if self.z_size > 2 and self.x_size > 2 and self.y_size > 2:
+                self.cube[1: self.z_size-1, 1: self.x_size-1, 1: self.y_size-1] = 0
 
-    
-    
-    # def rotate(self, attitude: Attitude):
-    #     """旋转几何体（旧版）
+        else:
+            """旋转几何体（旧版）
 
-    #     Args:
-    #         attitude (Attitude): 旋转的目标位置
-    #     """        
+            Args:
+                attitude (Attitude): 旋转的目标位置
+            """        
 
-    #     # t_rotateStart = time.time()
+            # t_rotateStart = time.time()
 
-    #     # 围绕原点做任意旋转时，所有点都在以如下值的半径的球中
-    #     radius = math.sqrt(pow(self.x_size, 2) 
-    #                     + pow(self.y_size, 2) 
-    #                     + pow(self.z_size, 2))
-
-
-    #     # 加上偏移量保证所有的点的坐标都大于零
-    #     offset = np.mat([radius, radius, radius]).T
-
-    #     # 给定旋转的执行顺序，依次是 roll, pitch, yaw
-    #     # T_rotate = T_yaw * T_pitch * T_roll
-    #     T_rotate = self.get_rotate_matrix(attitude)
-
-    #     # 存储变换后的点
-    #     new_points = []
-
-    #     # 直接旋转变换后的物体有空洞, 因为离散点的映射可能会映射到相同的整数点内
-    #     # 因此在映射时优化，一个点映射到多个目标点
-
-    #     # 使用预先处理的 self.points 加速矩阵运算
-    #     # 此时的 newPointMat 有正有负
-    #     newPointMat = T_rotate * self.pointsMat
-
-    #     # distThsld = 0.84    #0.81, 0.8661
-    #     # 自动调整 distThsld，根据几何体尺寸差异
-    #     sizes = [self.x_size, self.y_size, self.z_size]
-    #     size_range = max(sizes) - min(sizes)
-
-    #     if size_range >= 10:
-    #         distThsld = 0.84
-    #     else:
-    #         distThsld = 0.81
+            # 围绕原点做任意旋转时，所有点都在以如下值的半径的球中
+            radius = math.sqrt(pow(self.x_size, 2) 
+                            + pow(self.y_size, 2) 
+                            + pow(self.z_size, 2))
 
 
-    #     for idx in range(newPointMat.shape[1]):
+            # 加上偏移量保证所有的点的坐标都大于零
+            offset = np.mat([radius, radius, radius]).T
+
+            # 给定旋转的执行顺序，依次是 roll, pitch, yaw
+            # T_rotate = T_yaw * T_pitch * T_roll
+            T_rotate = self.get_rotate_matrix(attitude)
+
+            # 存储变换后的点
+            new_points = []
+
+            # 直接旋转变换后的物体有空洞, 因为离散点的映射可能会映射到相同的整数点内
+            # 因此在映射时优化，一个点映射到多个目标点
+
+            # 使用预先处理的 self.points 加速矩阵运算
+            # 此时的 newPointMat 有正有负
+            newPointMat = T_rotate * self.pointsMat
+
+            # distThsld = 0.84    #0.81, 0.8661
+            # 自动调整 distThsld，根据几何体尺寸差异
+            sizes = [self.x_size, self.y_size, self.z_size]
+            size_range = max(sizes) - min(sizes)
+
+            if size_range >= 10:
+                distThsld = 0.84
+            else:
+                distThsld = 0.81
+
+
+            for idx in range(newPointMat.shape[1]):
+                
+                # 加上偏置后得到的都是正坐标
+                newPoint = newPointMat[:, idx: idx + 1] + offset
+                # 得到一个点的坐标（小数）
+                [nx, ny, nz] = [newPoint[i, 0] for i in range(3)]
+                pxList = [math.floor(nx), math.ceil(nx)]
+                pyList = [math.floor(ny), math.ceil(ny)]
+                pzList = [math.floor(nz), math.ceil(nz)]
+                
+                for px in pxList:
+                    for py in pyList:
+                        for pz in pzList:
+                            # 计算变换后点到其周围整点的距离
+                            ptDist = dist(nx, ny, nz, px, py, pz)
+                            # 与 (nx, ny. nz) 距离小于阈值的整点都加入 new_points
+                            if ptDist < distThsld:
+                                new_points.append(np.mat([px, py, pz]).T)
+
+            min_x = min_y = min_z = math.ceil(radius)
+            max_x = max_y = max_z = 0
+
+            # 找所有点各个轴方向的最大和最小值
+            for point in new_points:
+                min_x = min(min_x, point[0, 0])
+                min_y = min(min_y, point[1, 0])
+                min_z = min(min_z, point[2, 0])
+
+                max_x = max(max_x, point[0, 0])
+                max_y = max(max_y, point[1, 0])
+                max_z = max(max_z, point[2, 0])
             
-    #         # 加上偏置后得到的都是正坐标
-    #         newPoint = newPointMat[:, idx: idx + 1] + offset
-    #         # 得到一个点的坐标（小数）
-    #         [nx, ny, nz] = [newPoint[i, 0] for i in range(3)]
-    #         pxList = [math.floor(nx), math.ceil(nx)]
-    #         pyList = [math.floor(ny), math.ceil(ny)]
-    #         pzList = [math.floor(nz), math.ceil(nz)]
+            # 使物体的框架紧贴着坐标系的 “墙角”
+            for point in new_points:
+                point -= np.mat([min_x, min_y, min_z]).T
             
-    #         for px in pxList:
-    #             for py in pyList:
-    #                 for pz in pzList:
-    #                     # 计算变换后点到其周围整点的距离
-    #                     ptDist = dist(nx, ny, nz, px, py, pz)
-    #                     # 与 (nx, ny. nz) 距离小于阈值的整点都加入 new_points
-    #                     if ptDist < distThsld:
-    #                         new_points.append(np.mat([px, py, pz]).T)
+            # 旋转变换后的物体的框架的大小
+            self.x_size = round(max_x - min_x + 1)
+            self.y_size = round(max_y - min_y + 1)
+            self.z_size = round(max_z - min_z + 1)
 
-    #     min_x = min_y = min_z = math.ceil(radius)
-    #     max_x = max_y = max_z = 0
+            assert self.x_size > 0 and self.y_size > 0 and self.z_size > 0, \
+                print("{} {} {}".format(self.x_size, self.y_size, self.z_size))
+            #"物体框架大小不正确"
 
-    #     # 找所有点各个轴方向的最大和最小值
-    #     for point in new_points:
-    #         min_x = min(min_x, point[0, 0])
-    #         min_y = min(min_y, point[1, 0])
-    #         min_z = min(min_z, point[2, 0])
+            # 新建空的 cube
+            self.cube = np.zeros((self.z_size, self.x_size, self.y_size))
+            # 填充 cube 中的有值部分
+            for point in new_points:
+                [x, y, z] = [int(point[i, 0]) for i in range(3)]
+                self.cube[z][x][y] = 1
+            
+            # t_afterCreate = time.time()
+            # print("Create New Geometry Time: ", t_afterCreate - t_beforeCreate, "\n")
 
-    #         max_x = max(max_x, point[0, 0])
-    #         max_y = max(max_y, point[1, 0])
-    #         max_z = max(max_z, point[2, 0])
-        
-    #     # 使物体的框架紧贴着坐标系的 “墙角”
-    #     for point in new_points:
-    #         point -= np.mat([min_x, min_y, min_z]).T
-        
-    #     # 旋转变换后的物体的框架的大小
-    #     self.x_size = round(max_x - min_x + 1)
-    #     self.y_size = round(max_y - min_y + 1)
-    #     self.z_size = round(max_z - min_z + 1)
-
-    #     assert self.x_size > 0 and self.y_size > 0 and self.z_size > 0, \
-    #         print("{} {} {}".format(self.x_size, self.y_size, self.z_size))
-    #     #"物体框架大小不正确"
-
-    #     # 新建空的 cube
-    #     self.cube = np.zeros((self.z_size, self.x_size, self.y_size))
-    #     # 填充 cube 中的有值部分
-    #     for point in new_points:
-    #         [x, y, z] = [int(point[i, 0]) for i in range(3)]
-    #         self.cube[z][x][y] = 1
-        
-    #     # t_afterCreate = time.time()
-    #     # print("Create New Geometry Time: ", t_afterCreate - t_beforeCreate, "\n")
-
-    #     # t_rotateEnd = time.time()
-    #     # print("Rotat Run Time: ", t_rotateEnd - t_rotateStart, "\n\n")
+            # t_rotateEnd = time.time()
+            # print("Rotat Run Time: ", t_rotateEnd - t_rotateStart, "\n\n")
 
 
     def add(self, geom, position: Position, coef=1):
@@ -298,61 +297,61 @@ class Item(object):
         self.heightmap_bottomup = self.curr_geometry.heightmap_bottomup()
 
     # 旋转 init_geometry 一定角度得到 curr_geometry
-    def rotate(self, attitude: Attitude):
+    def rotate(self, attitude: Attitude, step_width):
         self.curr_geometry = Geometry(self.init_geometry.cube)
-        self.curr_geometry.rotate(attitude)
+        self.curr_geometry.rotate(attitude, step_width)
         self.attitude = attitude
 
     # 包括旋转和平移的变换
-    def transform(self, transform: Transform):
-        self.rotate(transform.attitude)
+    def transform(self, transform: Transform, step_width):
+        self.rotate(transform.attitude, step_width)
         self.position = transform.position
 
-    # # 获取具有平面稳定性的物体姿态
-    # def planar_stable_attitude(self, step_width):
+    # 获取具有平面稳定性的物体姿态
+    def planar_stable_attitude(self, step_width):
+        if step_width == 90:
+            stable_attitudes = [
+                Attitude(roll=0, pitch=0, yaw=0),          # 底面是原始 z 面
+                Attitude(roll=90, pitch=0, yaw=0),         # 底面是原始 x 面
+                Attitude(roll=0, pitch=90, yaw=0),         # 底面是原始 y 面
+            ]
+            return stable_attitudes
+        else:
+            # 取稳定性最高的前 6 个姿态
+            stable_attitudes_score = PriorityQueue()
 
-    #     # 取稳定性最高的前 6 个姿态
-    #     stable_attitudes_score = PriorityQueue()
+            # 遍历所有的翻滚角 roll 和俯仰角 pitch
+            for roll in range(0, 360, step_width):
+                for pitch in range(0, 360, step_width):
+                    # 当前的姿态参数
+                    curr_attitude = Attitude(roll, pitch, 0)
+                    self.curr_geometry = Geometry(self.init_geometry.cube)
+                    self.curr_geometry.rotate(curr_attitude, step_width)
+                    # 计算当前姿态对应的稳定性
+                    stabilty = self.curr_geometry.stability()
 
-    #     # 遍历所有的翻滚角 roll 和俯仰角 pitch
-    #     for roll in range(0, 360, step_width):
-    #         for pitch in range(0, 360, step_width):
-    #             # 当前的姿态参数
-    #             curr_attitude = Attitude(roll, pitch, 0)
-    #             self.curr_geometry = Geometry(self.init_geometry.cube)
-    #             self.curr_geometry.rotate(curr_attitude)
-    #             # 计算当前姿态对应的稳定性
-    #             stabilty = self.curr_geometry.stability()
+                    # ------DEBUG BEGIN------
+                    # print("roll: ", roll, "    pitch: ", pitch)
+                    # print("stability: ", stabilty)
+                    # display = Display([15, 15, 15])
+                    # display.show(self.curr_geometry)
+                    # input()
+                    # -------DEBUG END-------
 
-    #             # ------DEBUG BEGIN------
-    #             # print("roll: ", roll, "    pitch: ", pitch)
-    #             # print("stability: ", stabilty)
-    #             # display = Display([15, 15, 15])
-    #             # display.show(self.curr_geometry)
-    #             # input()
-    #             # -------DEBUG END-------
+                    # 加入优先队列中排序
+                    stable_attitudes_score.put(AttitudeStability(curr_attitude, stabilty))
 
-    #             # 加入优先队列中排序
-    #             stable_attitudes_score.put(AttitudeStability(curr_attitude, stabilty))
+            # 去掉稳定性数值，只保留姿态 
+            # 取稳定性最高的前 6 个姿态
+            stable_attitudes = []
+            cnt = 0
+            while not stable_attitudes_score.empty() and cnt < 1: #6
+                cnt += 1
+                attitude_score = stable_attitudes_score.get()
+                # print(attitude_score)
+                stable_attitudes.append(attitude_score.attitude)
+            
+            return stable_attitudes
 
-    #     # 去掉稳定性数值，只保留姿态 
-    #     # 取稳定性最高的前 6 个姿态
-    #     stable_attitudes = []
-    #     cnt = 0
-    #     while not stable_attitudes_score.empty() and cnt < 6: #6
-    #         cnt += 1
-    #         attitude_score = stable_attitudes_score.get()
-    #         # print(attitude_score)
-    #         stable_attitudes.append(attitude_score.attitude)
-        
-    #     return stable_attitudes
-
-    def planar_stable_attitude(self):
-        stable_attitudes = [
-            Attitude(roll=0, pitch=0, yaw=0),          # 底面是原始 z 面
-            Attitude(roll=90, pitch=0, yaw=0),         # 底面是原始 x 面
-            Attitude(roll=0, pitch=90, yaw=0),         # 底面是原始 y 面
-        ]
-        return stable_attitudes
 
     

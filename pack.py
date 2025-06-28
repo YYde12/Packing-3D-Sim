@@ -92,14 +92,14 @@ class PackingProblem(object):
         for transform in transforms:
             print("transform", transform,"Isstable", checker.is_statically_stable(curr_item, transform))
             if checker.is_statically_stable(curr_item, transform):
-                curr_item.transform(transform)
-                self.container.add_item(curr_item)
+                # curr_item.transform(transform, step_width = 90)
+                # self.container.add_item(curr_item)
                 return transform
 
         # If no stable position is found, fall back to the first candidate
         print("[WARNING]: All candidate positions are unstable. Using the first candidate as fallback.")
-        curr_item.transform(transforms[0])
-        self.container.add_item(curr_item)
+        # curr_item.transform(transforms[0])
+        # self.container.add_item(curr_item)
         return transforms[0]
         # # 暂时不考虑放置物体后物体堆的稳定性
         # # 直接按照排名第一的变换矩阵放置物体

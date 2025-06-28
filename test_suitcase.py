@@ -375,14 +375,14 @@ def run_simulator(sim: sim_utils.SimulationContext, scene_entities: dict):
     # --- Packing Algorithm ---
     # Initialize packing problem with box size and items
     items = []
-    suitcase_size_small = get_suitcase_size("/home/yu/IsaacLab/source/isaaclab_assets/manibot/suitcase_normal.usd")
-    suitcase_size_normal = get_suitcase_size("/home/yu/IsaacLab/source/isaaclab_assets/manibot/suitcase_large.usd")
+    suitcase_size_normal = get_suitcase_size("/home/yu/IsaacLab/source/isaaclab_assets/manibot/suitcase_normal.usd")
+    suitcase_size_large = get_suitcase_size("/home/yu/IsaacLab/source/isaaclab_assets/manibot/suitcase_large.usd")
     for i in range(len(suitcases)):
         if i % 2 == 0:
-            item = getSurfaceItem(suitcase_size_normal[2], suitcase_size_normal[0], suitcase_size_normal[1])
+            item = getSurfaceItem(suitcase_size_large[2], suitcase_size_large[0], suitcase_size_large[1])
             items.append(item)
         else:
-            item = getSurfaceItem(suitcase_size_small[2], suitcase_size_small[0], suitcase_size_small[1])
+            item = getSurfaceItem(suitcase_size_normal[2], suitcase_size_normal[0], suitcase_size_normal[1])
             items.append(item)
     problem = PackingProblem(box_size, items)
     current_idx = 0  # The index of the object to be placed

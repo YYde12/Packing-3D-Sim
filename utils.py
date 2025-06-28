@@ -131,7 +131,7 @@ class StabilityChecker:
         :return: True if statically stable, False otherwise
         """
         # Apply the transform to the item
-        item.transform(transform)
+        item.transform(transform, step_width = 45)
 
          # If the item is in contact with the ground, consider it stable
         if item.position.z == 0:

@@ -126,7 +126,7 @@ class Container(object):
         return True
 
 
-    def search_possible_position(self, item: Item, grid_num=10, step_width=45):
+    def search_possible_position(self, item: Item, grid_num=50, step_width=90):
         
         # 存放所有可能的变换矩阵，
         # stable_transforms_score = PriorityQueue(TransformScore(score=10000))
@@ -147,7 +147,7 @@ class Container(object):
         # 预处理：提前找到一些比较稳定的 roll, pitch
         # yaw 不影响物体放在平面上的稳定性
         pitch_yaw_time_start = time.time()
-        stable_attitudes = item.planar_stable_attitude()
+        stable_attitudes = item.planar_stable_attitude(step_width)
         print(f"[INFO]: Pitch yaw time: {time.time() - pitch_yaw_time_start:.2f} seconds")
 
         # t2 = time.time()
@@ -168,7 +168,7 @@ class Container(object):
                 curr_attitude = Attitude(part_attitude.roll, part_attitude.pitch, yaw)
                 # 生成旋转后的物体
                 rotate_time_start = time.time()
-                item.rotate(curr_attitude)
+                item.rotate(curr_attitude, step_width)
                 # 获取该物体自顶向下和自底向上的高度图
                 item.calc_heightmap()
                 print(f"[INFO]: Rotate time: {time.time() - rotate_time_start:.2f} seconds")
